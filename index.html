@@ -14,31 +14,36 @@ table{border-collapse:collapse;width:100%;font-size:13px}td,th{border:1px solid 
 .course-row td{background:var(--light)}.section th{background:var(--dark)}.side{padding:12px}.side h2{font-size:17px;margin:4px 0 10px}.scale td,.scale th{padding:4px}
 .excluded{opacity:.4;text-decoration:line-through}.invalid{outline:2px solid #d33}[hidden]{display:none !important}.hqp{margin-top:14px;padding:15px}.hqp h2{margin:0 0 8px}.apRow{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin:9px 0}.apRow select{max-width:100%;flex:1;min-width:130px}.apRow .removeAP{flex:0}.hqpSummary{display:flex;gap:16px;flex-wrap:wrap;background:#e6effb;border-radius:7px;padding:12px;margin-top:12px}.hqpSummary span{flex:1;min-width:135px}.foot{font-size:12px;color:#52667d;margin-top:14px}
 @media(max-width:820px){.layout{grid-template-columns:1fr}main{padding:10px}.side{max-height:330px;overflow:auto}}
+@page{size:8.5in 11in;margin:0.45in}
 @media print{
- @page{size:landscape;margin:0.35in}
- body{background:white;font-size:11px}
+ body{background:white;font-size:12px}
  main{max-width:none;padding:0}
  header{display:flex}
- .layout{display:grid!important;grid-template-columns:minmax(0,1fr) 230px!important;gap:8px;align-items:start}
+ .layout{display:block!important; width:100%!important;grid-template-columns:none!important}
+ .layout>.panel{width:100%!important;max-width:100%!important;margin-bottom:12px}
  .panel{overflow:visible!important}
  .table-wrap{overflow:visible!important;min-width:0}
- .side{display:block!important;max-height:none!important;overflow:visible!important;margin:0;padding:8px;font-size:10px;break-inside:avoid-page;page-break-inside:avoid}
- .side h2{font-size:13px}
- .side .notice{display:block!important;font-size:10px;line-height:1.25}
+ .table-wrap>table{width:100%!important;table-layout:fixed!important}
+ .table-wrap>table th,.table-wrap>table td{min-width:0!important;overflow-wrap:anywhere}
+ .side{display:block!important;max-height:none!important;overflow:visible!important;margin:0;padding:10px;font-size:12px;break-before:page;page-break-before:always}
+ .side h2{font-size:16px}
+ .side .notice{display:block!important;font-size:12px;line-height:1.35}
  .side .notice p{margin:5px 0}
- .scale{font-size:9px}
- .scale td,.scale th{padding:2px}
- table{font-size:10px}
- td,th{padding:4px}
- .grade{width:47px;padding:3px 1px;font-size:10px}
- .level{width:42px;padding:2px 0;font-size:10px}
- .course-name{min-width:105px}
- .section th{font-size:11px;padding:5px}
+ .scale{font-size:12px;max-width:420px}
+ .scale td,.scale th{padding:3px 7px}
+ table{font-size:12px}
+ td,th{padding:5px 4px}
+ .grade{width:50px;padding:4px 1px;font-size:12px}
+ .level{width:58px;padding:3px 0;font-size:12px}
+ .course-name{min-width:0!important;width:25%}
+ .section th{font-size:12px;padding:6px}
  .notice:not(.side .notice){display:none}
  button,.foot{display:none!important}
  .course-row,.section{break-inside:avoid;page-break-inside:avoid}
  thead{display:table-header-group}
  .hqp,.stats{break-inside:avoid-page}
+ #transcriptLegend{display:block;break-inside:avoid-page}
+ .side .scale{break-inside:avoid-page}
 }
 [hidden]{display:none !important}
 </style></head><body><main>
@@ -187,18 +192,19 @@ function apBonus(){return apScores.reduce((t,x)=>t+(Number(x.score)>=3&&Number(x
 function renderAP(){const holder=byId("apEntries");holder.innerHTML="";apScores.forEach((entry,i)=>{const row=document.createElement("div");row.className="apRow";const subj=document.createElement("select");subj.setAttribute("aria-label","AP exam subject");for(const name of apSubjects){const o=document.createElement("option");o.textContent=name;o.value=name;subj.append(o)}subj.value=entry.subject;subj.onchange=()=>{apScores[i].subject=subj.value;calc()};const name=document.createElement("input");name.placeholder="AP course or exam name";name.setAttribute("aria-label","AP exam name");name.value=entry.name||"";name.style.cssText="flex:2;min-width:150px;padding:9px;border:1px solid #aabdd1;border-radius:7px";name.oninput=()=>{apScores[i].name=name.value;save()};const score=document.createElement("select");score.setAttribute("aria-label","AP exam score");for(const [value,label] of [["","Select score"],["1","1 — 0.0"],["2","2 — 0.0"],["3","3 — +0.3"],["4","4 — +0.4"],["5","5 — +0.5"]]){const o=document.createElement("option");o.value=value;o.textContent=label;score.append(o)}score.value=entry.score||"";score.onchange=()=>{apScores[i].score=score.value;calc()};const remove=document.createElement("button");remove.className="removeAP";remove.textContent="Remove";remove.onclick=()=>{apScores.splice(i,1);renderAP();calc()};row.append(subj,name,score,remove);holder.append(row)})}
 byId("addAP").onclick=()=>{apScores.push({subject:"English",name:"",score:""});renderAP();calc()};
 function parse(v){v=v.trim();if(!v)return null;const m=v.match(/^(100|[0-9]{1,2})(\*)?$/);if(!m)return "invalid";const n=Number(m[1]);return {n,failed:n<70||!!m[2]}}
-function pts(g,level){if(!g||g==="invalid"||level==="N")return null;if(g.failed)return 0;if(system.value==="4")return g.n>=90?4:g.n>=80?3:2;return (g.n-60)/10+(level==="E"?1:0)}
+function pts(g,level){if(!g||g==="invalid"||level==="N"||level==="")return null;if(g.failed)return 0;if(system.value==="4")return g.n>=90?4:g.n>=80?3:2;return (g.n-60)/10+(level==="E"?1:0)}
 function save(){try{localStorage.setItem(key,JSON.stringify({system:system.value,entries:courseRows.map(r=>({s1:r.querySelector('[data-sem="1"]').value,s2:r.querySelector('[data-sem="2"]').value,level:r.querySelector(".level").value})),apScores}))}catch(e){}}
 function fiveDecimalsFromTenths(tenths,count){if(!count)return "—";const scaled=Math.trunc(tenths*10000/count);return Math.floor(scaled/100000)+"."+String(scaled%100000).padStart(5,"0")}
 function calc(){let totalTenths=0,count=0,earned=0,failures=0;const attempted={};for(const row of courseRows){const subject=row.dataset.subject,level=row.querySelector(".level").value;let courseCredits=0;for(const sem of [1,2]){const input=row.querySelector('[data-sem="'+sem+'"]'),output=row.querySelector('[data-pts="'+sem+'"]'),g=parse(input.value),p=pts(g,level);input.classList.toggle("invalid",g==="invalid");output.classList.remove("excluded");output.title="";output.textContent=p===null?"":p.toFixed(1);if(g&&g!=="invalid"){if(g.failed)failures++;else{earned+=.5;courseCredits+=.5}if(p!==null){const used=attempted[subject]||0;if(used<8){totalTenths+=Math.round(p*10);count++;attempted[subject]=used+1}else{output.classList.add("excluded");output.title="Excluded: first four credits already attempted in this subject"}}}}row.querySelector(".credit").textContent=courseCredits.toFixed(1)}const total=totalTenths/10;const bonusTenths=system.value==="5"?apScores.reduce((sum,x)=>{const score=Number(x.score);return sum+(score>=3&&score<=5?score:0)},0):0;const bonus=bonusTenths/10;byId("apBonus").textContent=bonus.toFixed(1);byId("apFactors").textContent=count;byId("apAdjusted").textContent=count?fiveDecimalsFromTenths(totalTenths+bonusTenths,count):"—";byId("breakScale").textContent=system.value+".0";byId("breakNote").textContent=system.value==="5"?"Each counted semester grade is one course factor. AP bonuses are added only to the 5.0 GPA numerator, not the course factors.":"Each counted semester grade is one course factor. 4.0 GPA = total course GPA points ÷ number of course factors. No AP bonus points are included.";byId("breakPoints").textContent=total.toFixed(1);byId("breakBonusWrap").hidden=system.value!=="5";byId("breakBonusWrap").style.display=system.value==="5"?"":"none";byId("breakBonus").textContent=bonus.toFixed(1);byId("breakTotal").textContent=(total+bonus).toFixed(1);byId("breakFactors").textContent=count;byId("breakFormula").textContent=system.value==="5"?`(${total.toFixed(1)} + ${bonus.toFixed(1)}) ÷ ${count} = ${count?fiveDecimalsFromTenths(totalTenths+bonusTenths,count):"—"}`:`${total.toFixed(1)} ÷ ${count} = ${count?fiveDecimalsFromTenths(totalTenths,count):"—"}`;byId("gpa").textContent=count?fiveDecimalsFromTenths(totalTenths+bonusTenths,count):"—";save()}
 function scale(){let h="",b="";if(system.value==="4"){h="<tr><th>Grade</th><th>Points</th></tr>";for(const [g,p] of [["90–100","4.0"],["80–89","3.0"],["70–79","2.0"],["Below 70 / *","0.0"]])b+="<tr><td>"+g+"</td><td>"+p+"</td></tr>";byId("scaleTitle").textContent="4.0 GPA Scale";byId("scaleNote").innerHTML="<b>C</b> = Counts toward GPA<br><b>N</b> = Excluded from GPA"}
 else{h="<tr><th>Grade</th><th>Core (C)</th><th>Enhanced (E)</th></tr>";for(let n=100;n>=70;n--)b+="<tr><td>"+n+"</td><td>"+((n-60)/10).toFixed(1)+"</td><td>"+((n-60)/10+1).toFixed(1)+"</td></tr>";b+="<tr><td>Below 70 / *</td><td>0.0</td><td>0.0</td></tr>";byId("scaleTitle").textContent="5.0 GPA Scale";byId("scaleNote").innerHTML="<b>C</b> = Core<br><b>E</b> = Enhanced<br><b>N</b> = Excluded from GPA"}
-byId("transcriptLegend").hidden=system.value!=="5";byId("hqpPanel").hidden=system.value!=="5";byId("hqpPanel").style.display=system.value==="5"?"":"none";byId("scaleHead").innerHTML=h;byId("scaleBody").innerHTML=b;for(const row of courseRows){const sel=row.querySelector(".level"),old=sel.value;sel.innerHTML=system.value==="4"?'<option>C</option><option>N</option>':'<option>C</option><option>E</option><option>N</option>';sel.value=system.value==="4"&&old==="E"?"C":old}calc()}
+byId("transcriptLegend").hidden=system.value!=="5";byId("hqpPanel").hidden=system.value!=="5";byId("hqpPanel").style.display=system.value==="5"?"":"none";byId("scaleHead").innerHTML=h;byId("scaleBody").innerHTML=b;for(const row of courseRows){const sel=row.querySelector(".level"),old=sel.value;sel.innerHTML=system.value==="4"?'<option value="">Select</option><option>C</option><option>N</option>':'<option value="">Select</option><option>C</option><option>E</option><option>N</option>';sel.value=system.value==="4"&&old==="E"?"C":old}calc()}
 for(const row of courseRows){row.addEventListener("input",calc);row.addEventListener("change",calc)}system.addEventListener("change",scale);
-byId("reset").onclick=()=>{if(!confirm("Clear all grades?"))return;courseRows.forEach(r=>{r.querySelectorAll(".grade").forEach(i=>i.value="");r.querySelector(".level").value="C"});apScores=[];renderAP();calc()};
+byId("reset").onclick=()=>{if(!confirm("Clear all grades?"))return;courseRows.forEach(r=>{r.querySelectorAll(".grade").forEach(i=>i.value="");r.querySelector(".level").value=""});apScores=[];renderAP();calc()};
 byId("export").onclick=()=>{const data=JSON.stringify({system:system.value,entries:courseRows.map(r=>({s1:r.querySelector('[data-sem="1"]').value,s2:r.querySelector('[data-sem="2"]').value,level:r.querySelector(".level").value})),apScores}),url=URL.createObjectURL(new Blob([data],{type:"application/json"})),a=document.createElement("a");a.href=url;a.download="gpa-backup.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 byId("importBtn").onclick=()=>byId("importFile").click();byId("importFile").onchange=async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data.entries))throw Error();load(data);scale()}catch(e){alert("Invalid backup file")}e.target.value=""};
-function load(data){apScores=Array.isArray(data.apScores)?data.apScores.filter(x=>x&&apSubjects.includes(x.subject)&&["","1","2","3","4","5"].includes(String(x.score))).slice(0,30):[];renderAP();system.value=data.system==="4"?"4":"5";courseRows.forEach((r,i)=>{const x=data.entries?.[i];if(!x)return;r.querySelector('[data-sem="1"]').value=x.s1||"";r.querySelector('[data-sem="2"]').value=x.s2||"";const lev=r.querySelector(".level");lev.value=["C","E","N"].includes(x.level)?x.level:"C"})}
+function load(data){apScores=Array.isArray(data.apScores)?data.apScores.filter(x=>x&&apSubjects.includes(x.subject)&&["","1","2","3","4","5"].includes(String(x.score))).slice(0,30):[];renderAP();system.value=data.system==="4"?"4":"5";courseRows.forEach((r,i)=>{const x=data.entries?.[i];if(!x)return;r.querySelector('[data-sem="1"]').value=x.s1||"";r.querySelector('[data-sem="2"]').value=x.s2||"";const lev=r.querySelector(".level");lev.value=["C","E","N", ""].includes(x.level)?x.level:""})}
+courseRows.forEach(r=>{r.querySelector(".level").innerHTML='<option value="">Select</option><option>C</option><option>E</option><option>N</option>';r.querySelector(".level").value=""});
 try{const old=JSON.parse(localStorage.getItem(key));if(old&&Array.isArray(old.entries))load(old)}catch(e){}
 scale();
 })();
